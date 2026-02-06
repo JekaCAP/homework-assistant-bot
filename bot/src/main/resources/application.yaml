@@ -1,0 +1,71 @@
+spring:
+  application:
+    name: homework-assistant-bot
+  task:
+    execution:
+      pool:
+        core-size: 5
+        max-size: 10
+        queue-capacity: 100
+
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/homework_bot}
+    username: ${DB_USERNAME:postgres}
+    password: ${DB_PASSWORD:postgres}
+    hikari:
+      maximum-pool-size: 10
+      minimum-idle: 5
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: true
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: true
+
+  liquibase:
+    enabled: true
+    change-log: classpath:db/changelog/db.changelog-master.yaml
+
+  cache:
+    type: simple
+    cache-names:
+      - prInfo
+
+telegram:
+  bot:
+    username: ${TELEGRAM_BOT_USERNAME:java_code_assistant_bot}
+    token: ${TELEGRAM_BOT_TOKEN:}
+    timeout: 30
+    admin:
+      chat-id: ${TELEGRAM_ADMIN_CHAT_ID:-1003857605616}
+      notify-on-submission: true
+      notify-on-review: true
+      notify-on-error: true
+      admin-ids: ${TELEGRAM_ADMIN_IDS:759144172,5497690937,406629686}
+
+github:
+  token: ${GITHUB_TOKEN:}
+  api-url: https://api.github.com
+  connect-timeout: 30000
+  read-timeout: 60000
+  max-retries: 3
+
+logging:
+  level:
+    ru.assistant.bot: DEBUG
+    org.springframework: INFO
+    org.telegram: DEBUG
+    org.hibernate.SQL: DEBUG
+    org.hibernate.type: TRACE
+    ru.assistant.bot.github: DEBUG
+    org.kohsuke.github: DEBUG
+  pattern:
+    console: "%d{HH:mm:ss} %-5level [%thread] %logger{36} - %msg%n"
+  file:
+    name: logs/homework-bot.log
+
+server:
+  port: ${SERVER_PORT:8080}
