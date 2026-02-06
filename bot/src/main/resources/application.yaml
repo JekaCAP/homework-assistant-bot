@@ -9,9 +9,9 @@ spring:
         queue-capacity: 100
 
   datasource:
-    url: ${DB_URL:jdbc:postgresql://localhost:5432/homework_bot}
-    username: ${DB_USERNAME:postgres}
-    password: ${DB_PASSWORD:postgres}
+    url: jdbc:postgresql://localhost:5432/homework_bot
+    username: postgres
+    password: postgres
     hikari:
       maximum-pool-size: 10
       minimum-idle: 5
@@ -36,18 +36,21 @@ spring:
 
 telegram:
   bot:
-    username: ${TELEGRAM_BOT_USERNAME:java_code_assistant_bot}
-    token: ${TELEGRAM_BOT_TOKEN:}
+    username: java_code_assistant_bot
+    token: 8080749183:AAEFE8g4wGM-ophn1vlL-ccqAJCliyacIpY
     timeout: 30
     admin:
-      chat-id: ${TELEGRAM_ADMIN_CHAT_ID:-1003857605616}
+      chat-id: -1003857605616
       notify-on-submission: true
       notify-on-review: true
       notify-on-error: true
-      admin-ids: ${TELEGRAM_ADMIN_IDS:759144172,5497690937,406629686}
+      admin-ids:
+        - 759144172
+        - 5497690937
+        - 406629686
 
 github:
-  token: ${GITHUB_TOKEN:}
+  token: ${GITHUB_TOKEN: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}
   api-url: https://api.github.com
   connect-timeout: 30000
   read-timeout: 60000
@@ -68,4 +71,4 @@ logging:
     name: logs/homework-bot.log
 
 server:
-  port: ${SERVER_PORT:8080}
+  port: 8080
