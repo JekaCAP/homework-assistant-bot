@@ -22,6 +22,7 @@ import java.util.regex.Pattern;
 @RequiredArgsConstructor
 public class GitHubService {
 
+
     private final GitHub gitHub;
     private final GitHubProperties properties;
 
