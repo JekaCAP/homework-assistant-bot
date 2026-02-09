@@ -15,7 +15,6 @@ public class GitHubConfig {
 
     private final GitHubProperties properties;
 
-
     @Bean
     public GitHub gitHub() throws IOException {
         String token = properties.getToken();

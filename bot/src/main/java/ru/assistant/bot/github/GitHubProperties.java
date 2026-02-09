@@ -14,7 +14,6 @@ import org.springframework.validation.annotation.Validated;
 @ConfigurationProperties(prefix = "github")
 public class GitHubProperties {
 
-
     @NotBlank
     private String token;
 
