@@ -13,7 +13,9 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * KeyboardFactory
+ * Фабрика для создания inline-клавиатур Telegram бота.
+ * Генерирует клавиатуры для выбора курсов и заданий.
+ *
  * @author agent
  * @since 03.02.2026
  */
@@ -23,6 +25,12 @@ public class KeyboardFactory {
 
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("dd.MM");
 
+    /**
+     * Создает клавиатуру для выбора курсов.
+     *
+     * @param courses список доступных курсов
+     * @return InlineKeyboardMarkup с кнопками курсов
+     */
     public InlineKeyboardMarkup getCoursesKeyboard(List<Course> courses) {
         log.info("Creating keyboard for {} courses", courses.size());
 
@@ -30,9 +38,7 @@ public class KeyboardFactory {
 
         for (Course course : courses) {
             List<InlineKeyboardButton> row = new ArrayList<>();
-            String buttonText = course.getIcon() != null ?
-                    course.getIcon() + " " + course.getName() :
-                    "📚 " + course.getName();
+            String buttonText = course.getName();
 
             InlineKeyboardButton button = InlineKeyboardButton.builder()
                     .text(buttonText)
@@ -54,6 +60,12 @@ public class KeyboardFactory {
                 .build();
     }
 
+    /**
+     * Создает клавиатуру для выбора заданий в курсе.
+     *
+     * @param assignments список заданий курса
+     * @return InlineKeyboardMarkup с кнопками заданий
+     */
     public InlineKeyboardMarkup getAssignmentsKeyboard(List<Assignment> assignments) {
         log.info("Creating keyboard for {} assignments", assignments.size());
 
@@ -68,9 +80,9 @@ public class KeyboardFactory {
                 try {
                     if (assignment.getDeadline() instanceof LocalDateTime) {
                         LocalDateTime deadline = (LocalDateTime) assignment.getDeadline();
-                        buttonText += " (📅 " + deadline.format(DATE_FORMATTER) + ")";
+                        buttonText += " (до " + deadline.format(DATE_FORMATTER) + ")";
                     } else {
-                        buttonText += " (📅 " + assignment.getDeadline().toString() + ")";
+                        buttonText += " (до " + assignment.getDeadline().toString() + ")";
                     }
                 } catch (Exception e) {
                     log.warn("Could not format deadline for assignment {}: {}",
@@ -88,74 +100,10 @@ public class KeyboardFactory {
 
         List<InlineKeyboardButton> backRow = new ArrayList<>();
         backRow.add(InlineKeyboardButton.builder()
-                .text("⬅️ Назад к курсам")
+                .text("🔙 К курсам")
                 .callbackData("back_to_courses")
                 .build());
         rows.add(backRow);
-
-        return InlineKeyboardMarkup.builder()
-                .keyboard(rows)
-                .build();
-    }
-
-    public InlineKeyboardMarkup getAdminActionsKeyboard(Long submissionId, String prUrl) {
-        List<List<InlineKeyboardButton>> rows = new ArrayList<>();
-
-        List<InlineKeyboardButton> reviewRow = new ArrayList<>();
-        reviewRow.add(InlineKeyboardButton.builder()
-                .text("✅ 100")
-                .callbackData("review_" + submissionId + "_100")
-                .build());
-        reviewRow.add(InlineKeyboardButton.builder()
-                .text("⚠️ 50")
-                .callbackData("review_" + submissionId + "_50")
-                .build());
-        reviewRow.add(InlineKeyboardButton.builder()
-                .text("❌ 0")
-                .callbackData("review_" + submissionId + "_0")
-                .build());
-        rows.add(reviewRow);
-
-        List<InlineKeyboardButton> actionsRow = new ArrayList<>();
-        actionsRow.add(InlineKeyboardButton.builder()
-                .text("🔗 Открыть PR")
-                .url(prUrl)
-                .build());
-        actionsRow.add(InlineKeyboardButton.builder()
-                .text("👤 Профиль студента")
-                .callbackData("student_" + submissionId)
-                .build());
-        rows.add(actionsRow);
-
-        return InlineKeyboardMarkup.builder()
-                .keyboard(rows)
-                .build();
-    }
-
-    public InlineKeyboardMarkup getAdminMenuKeyboard() {
-        List<List<InlineKeyboardButton>> rows = new ArrayList<>();
-
-        List<InlineKeyboardButton> row1 = new ArrayList<>();
-        row1.add(InlineKeyboardButton.builder()
-                .text("📋 Непроверенные сдачи")
-                .callbackData("admin_unreviewed")
-                .build());
-        row1.add(InlineKeyboardButton.builder()
-                .text("📊 Статистика")
-                .callbackData("admin_stats")
-                .build());
-        rows.add(row1);
-
-        List<InlineKeyboardButton> row2 = new ArrayList<>();
-        row2.add(InlineKeyboardButton.builder()
-                .text("👥 Студенты")
-                .callbackData("admin_students")
-                .build());
-        row2.add(InlineKeyboardButton.builder()
-                .text("⚙️ Настройки")
-                .callbackData("admin_settings")
-                .build());
-        rows.add(row2);
 
         return InlineKeyboardMarkup.builder()
                 .keyboard(rows)
