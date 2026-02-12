@@ -5,19 +5,29 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.objects.Update;
+import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
+import org.telegram.telegrambots.meta.api.objects.replykeyboard.ReplyKeyboardMarkup;
+import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardButton;
 import org.telegram.telegrambots.meta.bots.AbsSender;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 import ru.assistant.bot.model.Student;
 import ru.assistant.bot.model.Submission;
+import ru.assistant.bot.model.dto.StudentRatingDto;
 import ru.assistant.bot.model.enums.UserState;
+import ru.assistant.bot.service.CourseService;
+import ru.assistant.bot.service.RatingService;
 import ru.assistant.bot.service.StudentService;
 import ru.assistant.bot.service.SubmissionService;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.regex.Pattern;
 
 /**
  * MessageHandler
+ *
  * @author agent
  * @since 03.02.2026
  */
@@ -29,6 +39,8 @@ public class MessageHandler {
     private final StudentService studentService;
     private final SubmissionService submissionService;
     private final CommandHandler commandHandler;
+    private final RatingService ratingService;
+    private final CourseService courseService;
 
     private static final Pattern GITHUB_USERNAME_PATTERN = Pattern.compile("^[a-zA-Z\\d](?:[a-zA-Z\\d]|-(?=[a-zA-Z\\d])){0,38}$");
     private static final Pattern PR_URL_PATTERN = Pattern.compile("^https://github\\.com/[^/]+/[^/]+/pull/\\d+$");
@@ -443,30 +455,133 @@ public class MessageHandler {
 
     private void handleRatingCommand(Long userId, AbsSender sender) {
         try {
-            String ratingText = """
-                    *Рейтинг студентов*
-                    
-                    Здесь будет таблица рейтинга всех студентов.
-                    
-                    *Функция в разработке:*
-                    • Топ 10 студентов по баллам
-                    • Рейтинг по курсам
-                    • Прогресс за месяц
-                    
-                    *Временно используйте:*
-                    /progress - для вашей личной статистики
-                    """;
+            // Получаем рейтинг
+            List<StudentRatingDto> topStudents = ratingService.getTopStudentsByAverageScore(10);
+
+            // Форматируем таблицу
+            String ratingText = formatRatingTable(topStudents, "🏆 ТОП-10 ПО СРЕДНЕМУ БАЛЛУ");
+
+            // Добавляем информацию о позиции текущего студента
+            Optional<Student> currentStudent = studentService.findByTelegramId(userId);
+            if (currentStudent.isPresent()) {
+                int studentRank = ratingService.getStudentRank(currentStudent.get().getId());
+                double avgScore = studentService.calculateAverageScore(currentStudent.get().getId());
+                int acceptedCount = studentService.countAcceptedSubmissions(currentStudent.get().getId());
+
+                ratingText += "\n\n" + String.format("""
+                    👤 *Ваша позиция:* #%d
+                    📊 *Ваш средний балл:* %.1f
+                    📝 *Принято работ:* %d
+                    """, studentRank, avgScore, acceptedCount);
+            }
+
+            // Получаем клавиатуру рейтинга
+            InlineKeyboardMarkup ratingKeyboard = getRatingInlineKeyboard();
 
             SendMessage message = SendMessage.builder()
                     .chatId(userId.toString())
                     .text(ratingText)
                     .parseMode("Markdown")
-                    .replyMarkup(commandHandler.getProgressKeyboard())
+                    .replyMarkup(ratingKeyboard)
                     .build();
 
             sender.execute(message);
+
+        } catch (Exception e) {
+            log.error("Error handling rating command", e);
+            sendErrorMessage(userId, "Ошибка при получении рейтинга", sender);
+        }
+    }
+
+    private String formatRatingTable(List<StudentRatingDto> topStudents, String title) {
+        if (topStudents.isEmpty()) {
+            return "🏆 *Рейтинг студентов*\n\n" +
+                   "Пока нет данных для рейтинга.\n" +
+                   "Сдайте первое задание, чтобы попасть в таблицу!";
+        }
+
+        StringBuilder sb = new StringBuilder();
+        sb.append("*").append(title).append("*\n\n");
+
+        sb.append("```\n");
+        sb.append(String.format("%-3s %-15s %-6s %-8s %-7s\n",
+                "#", "Имя", "Сред.", "Принято", "Прогр."));
+        sb.append("─".repeat(45)).append("\n");
+
+        for (StudentRatingDto student : topStudents) {
+            sb.append(String.format("%-3s %-15s %-6s %-8d %-7s\n",
+                    student.getFormattedRank(),
+                    student.getShortName(),
+                    student.getFormattedAverageScore(),
+                    student.getAssignmentsAccepted(),
+                    student.getCompletionRate()
+            ));
+        }
+        sb.append("```\n\n");
+
+        sb.append("*Легенда:*\n");
+        sb.append("• # - позиция в рейтинге\n");
+        sb.append("• Сред. - средний балл за задания\n");
+        sb.append("• Принято - количество принятых работ\n");
+        sb.append("• Прогр. - процент принятых от сданных\n");
+
+        return sb.toString();
+    }
+
+    private InlineKeyboardMarkup getRatingInlineKeyboard() {
+        InlineKeyboardMarkup keyboard = new InlineKeyboardMarkup();
+        List<List<InlineKeyboardButton>> rows = new ArrayList<>();
+
+        List<InlineKeyboardButton> row1 = new ArrayList<>();
+        row1.add(InlineKeyboardButton.builder()
+                .text("🏆 По среднему баллу")
+                .callbackData("rating:by_score")
+                .build());
+        row1.add(InlineKeyboardButton.builder()
+                .text("📊 По принятым работам")
+                .callbackData("rating:by_submissions")
+                .build());
+
+        List<InlineKeyboardButton> row2 = new ArrayList<>();
+        row2.add(InlineKeyboardButton.builder()
+                .text("📚 По курсам")
+                .callbackData("rating:by_courses")
+                .build());
+        row2.add(InlineKeyboardButton.builder()
+                .text("🔄 Обновить")
+                .callbackData("rating:refresh")
+                .build());
+
+        rows.add(row1);
+        rows.add(row2);
+        keyboard.setKeyboard(rows);
+
+        return keyboard;
+    }
+
+    private String formatStudentPosition(Student student, int rank) {
+        return String.format("👤 *Ваша позиция:* #%d\n" +
+                             "📊 *Ваш средний балл:* %.1f\n" +
+                             "📝 *Принято работ:* %d",
+                rank,
+                studentService.calculateAverageScore(student.getId()),
+                studentService.countAcceptedSubmissions(student.getId()));
+    }
+
+    private void sendErrorMessage(Long userId, String message, AbsSender sender) {
+        try {
+            ReplyKeyboardMarkup keyboard = commandHandler.getMainMenuKeyboard(userId);
+
+            SendMessage errorMessage = SendMessage.builder()
+                    .chatId(userId.toString())
+                    .text("❌ *Ошибка:* " + message + "\n\nПожалуйста, попробуйте позже.")
+                    .parseMode("Markdown")
+                    .replyMarkup(keyboard)
+                    .build();
+
+            sender.execute(errorMessage);
         } catch (TelegramApiException e) {
-            log.error("Error sending rating message", e);
+            log.error("Error sending error message to user {}", userId, e);
         }
     }
 
@@ -485,7 +600,6 @@ public class MessageHandler {
 
         userStates.put(userId, UserState.WAITING_FOR_GITHUB_USERNAME);
 
-        // Создаем контекст для хранения временных данных
         userContexts.put(userId, TelegramUpdateHandler.UserContext.builder().build());
 
         try {

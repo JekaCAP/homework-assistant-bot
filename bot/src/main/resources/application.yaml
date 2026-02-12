@@ -1,74 +1,72 @@
 spring:
   application:
-    name: homework-assistant-bot
+    name: ${SPRING_APPLICATION_NAME:homework-assistant-bot}
+
   task:
     execution:
       pool:
-        core-size: 5
-        max-size: 10
-        queue-capacity: 100
+        core-size: ${TASK_CORE_SIZE:5}
+        max-size: ${TASK_MAX_SIZE:10}
+        queue-capacity: ${TASK_QUEUE_CAPACITY:100}
 
   datasource:
-    url: jdbc:postgresql://localhost:5432/homework_bot
-    username: postgres
-    password: postgres
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/homework_bot}
+    username: ${DB_USERNAME:postgres}
+    password: ${DB_PASSWORD:postgres}
     hikari:
-      maximum-pool-size: 10
-      minimum-idle: 5
+      maximum-pool-size: ${DB_MAX_POOL_SIZE:10}
+      minimum-idle: ${DB_MIN_IDLE:5}
 
   jpa:
     hibernate:
-      ddl-auto: validate
-    show-sql: true
+      ddl-auto: ${JPA_DDL_AUTO:validate}
+    show-sql: ${JPA_SHOW_SQL:true}
     properties:
       hibernate:
-        dialect: org.hibernate.dialect.PostgreSQLDialect
+        dialect: ${JPA_DIALECT:org.hibernate.dialect.PostgreSQLDialect}
         format_sql: true
 
   liquibase:
-    enabled: true
-    change-log: classpath:db/changelog/db.changelog-master.yaml
+    enabled: ${LIQUIBASE_ENABLED:true}
+    change-log: ${LIQUIBASE_CHANGELOG:classpath:db/changelog/db.changelog-master.yaml}
 
   cache:
-    type: simple
+    type: ${CACHE_TYPE:simple}
     cache-names:
-      - prInfo
+      - ${CACHE_NAMES:prInfo}
 
 telegram:
   bot:
-    username: java_code_assistant_bot
-    token: 8080749183:AAEFE8g4wGM-ophn1vlL-ccqAJCliyacIpY
-    timeout: 30
+    username: ${BOT_USERNAME:java_code_assistant_bot}
+    token: ${BOT_TOKEN:}
+    timeout: ${BOT_TIMEOUT:30}
     admin:
-      chat-id: -1003857605616
-      notify-on-submission: true
-      notify-on-review: true
-      notify-on-error: true
-      admin-ids:
-        - 759144172
-        - 5497690937
-        - 406629686
+      chat-id: ${ADMIN_CHAT_ID:}
+      notify-on-submission: ${ADMIN_NOTIFY_SUBMISSION:true}
+      notify-on-review: ${ADMIN_NOTIFY_REVIEW:true}
+      notify-on-error: ${ADMIN_NOTIFY_ERROR:true}
+      admin-ids: ${ADMIN_IDS:}
 
 github:
-  token: ${GITHUB_TOKEN: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}
-  api-url: https://api.github.com
-  connect-timeout: 30000
-  read-timeout: 60000
-  max-retries: 3
+  token: ${GITHUB_TOKEN:}
+  api-url: ${GITHUB_API_URL:https://api.github.com}
+  connect-timeout: ${GITHUB_CONNECT_TIMEOUT:30000}
+  read-timeout: ${GITHUB_READ_TIMEOUT:60000}
+  max-retries: ${GITHUB_MAX_RETRIES:3}
 
 logging:
   level:
-    ru.assistant.bot: DEBUG
-    org.springframework: INFO
-    org.telegram: DEBUG
-    org.hibernate.SQL: DEBUG
-    org.hibernate.type: TRACE
-    ru.assistant.bot.github: DEBUG
-    org.kohsuke.github: DEBUG
+    ru.assistant.bot: ${LOG_LEVEL_BOT:DEBUG}
+    org.springframework: ${LOG_LEVEL_SPRING:INFO}
+    org.telegram: ${LOG_LEVEL_TELEGRAM:DEBUG}
+    org.hibernate.SQL: ${LOG_LEVEL_HIBERNATE_SQL:DEBUG}
+    org.hibernate.type: ${LOG_LEVEL_HIBERNATE_TYPE:TRACE}
+    ru.assistant.bot.github: ${LOG_LEVEL_GITHUB:DEBUG}
+    org.kohsuke.github: ${LOG_LEVEL_KOHSUKE:DEBUG}
   pattern:
-    console: "%d{HH:mm:ss} %-5level [%thread] %logger{36} - %msg%n"
-  file:
-    name: logs/homework-bot.log
+    console: "${LOG_PATTERN_CONSOLE:%d{HH:mm:ss} %-5level [%thread] %logger{36} - %msg%n}"
+#  file:
+#    name: ${LOG_FILE:logs/homework-bot.log}
 
 server:
-  port: 8080
+  port: ${SERVER_PORT:8080}

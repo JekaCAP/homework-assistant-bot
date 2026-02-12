@@ -9,6 +9,7 @@ import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.methods.updatingmessages.EditMessageText;
 import org.telegram.telegrambots.meta.api.objects.Update;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
+import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardButton;
 import org.telegram.telegrambots.meta.bots.AbsSender;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 import ru.assistant.bot.model.Assignment;
@@ -16,23 +17,27 @@ import ru.assistant.bot.model.Course;
 import ru.assistant.bot.model.Student;
 import ru.assistant.bot.model.Submission;
 import ru.assistant.bot.model.dto.AssignmentWithCourseDto;
+import ru.assistant.bot.model.dto.StudentRatingDto;
 import ru.assistant.bot.model.enums.SubmissionStatus;
 import ru.assistant.bot.model.enums.UserState;
 import ru.assistant.bot.repository.SubmissionRepository;
 import ru.assistant.bot.service.AdminService;
 import ru.assistant.bot.service.AssignmentService;
 import ru.assistant.bot.service.CourseService;
+import ru.assistant.bot.service.RatingService;
 import ru.assistant.bot.service.StudentService;
 import ru.assistant.bot.service.SubmissionService;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
 /**
  * CallbackQueryHandler
+ *
  * @author agent
  * @since 03.02.2026
  */
@@ -49,6 +54,7 @@ public class CallbackQueryHandler {
     private final SubmissionRepository submissionRepository;
     private final KeyboardFactory keyboardFactory;
     private final AdminService adminService;
+    private final RatingService ratingService;
 
     public void handleCallbackQuery(
             Update update,
@@ -81,11 +87,235 @@ public class CallbackQueryHandler {
                 handleCancel(userId, chatId, messageId, sender, userStates, userContexts);
             } else if (callbackData.startsWith("submission_")) {
                 handleSubmissionDetails(userId, chatId, messageId, callbackData, sender);
+            } else if (callbackData.startsWith("rating:")) {
+                handleRatingCallback(userId, chatId, messageId, callbackData, sender);
+            } else if (callbackData.startsWith("rating_course:")) {
+                handleCourseRatingCallback(userId, chatId, messageId, callbackData, sender);
             }
 
         } catch (TelegramApiException e) {
             log.error("Error handling callback query", e);
         }
+    }
+
+    private void handleCourseRatingCallback(Long userId, Long chatId, Integer messageId,
+                                            String callbackData, AbsSender sender)
+            throws TelegramApiException {
+
+        Long courseId = Long.parseLong(callbackData.substring("rating_course:".length()));
+        Optional<Course> courseOpt = courseService.findById(courseId);
+
+        if (courseOpt.isEmpty()) {
+            EditMessageText editMessage = EditMessageText.builder()
+                    .chatId(chatId.toString())
+                    .messageId(messageId)
+                    .text("Курс не найден.")
+                    .build();
+            sender.execute(editMessage);
+            return;
+        }
+
+        Course course = courseOpt.get();
+        List<StudentRatingDto> rating = ratingService.getCourseRating(courseId, 10);
+
+        String ratingText = formatCourseRatingTable(rating, course);
+
+        InlineKeyboardMarkup keyboard = new InlineKeyboardMarkup();
+        List<List<InlineKeyboardButton>> rows = new ArrayList<>();
+        List<InlineKeyboardButton> row = new ArrayList<>();
+        row.add(InlineKeyboardButton.builder()
+                .text("🔙 К списку курсов")
+                .callbackData("rating:by_courses")
+                .build());
+        rows.add(row);
+        keyboard.setKeyboard(rows);
+
+        EditMessageText editMessage = EditMessageText.builder()
+                .chatId(chatId.toString())
+                .messageId(messageId)
+                .text(ratingText)
+                .parseMode("Markdown")
+                .replyMarkup(keyboard)
+                .build();
+
+        sender.execute(editMessage);
+    }
+
+    private String formatCourseRatingTable(List<StudentRatingDto> rating, Course course) {
+        if (rating.isEmpty()) {
+            return String.format("📚 *%s*\n\n" +
+                                 "Пока никто не сдал задания по этому курсу.",
+                    course.getName());
+        }
+
+        StringBuilder sb = new StringBuilder();
+        sb.append("📚 *").append(course.getName()).append("*\n");
+        sb.append("Рейтинг студентов\n\n");
+
+        sb.append("```\n");
+        sb.append(String.format("%-3s %-15s %-6s %-8s\n",
+                "#", "Студент", "Балл", "Принято"));
+        sb.append("─".repeat(40)).append("\n");
+
+        int rank = 1;
+        for (StudentRatingDto student : rating) {
+            sb.append(String.format("%-3d %-15s %-6s %-8d\n",
+                    rank++,
+                    student.getShortName(),
+                    student.getFormattedAverageScore(),
+                    student.getAssignmentsAccepted()
+            ));
+        }
+        sb.append("```\n");
+
+        return sb.toString();
+    }
+
+    private void handleRatingCallback(Long userId, Long chatId, Integer messageId,
+                                      String callbackData, AbsSender sender)
+            throws TelegramApiException {
+
+        String[] parts = callbackData.split(":");
+        if (parts.length < 2) return;
+
+        String action = parts[1];
+        List<StudentRatingDto> rating;
+        String title;
+
+        switch (action) {
+            case "by_score":
+                rating = ratingService.getTopStudentsByAverageScore(10);
+                title = "🏆 ТОП-10 по среднему баллу";
+                break;
+            case "by_submissions":
+                rating = ratingService.getTopStudentsByAcceptedSubmissions(10);
+                title = "📊 ТОП-10 по принятым работам";
+                break;
+            case "by_courses":
+                showCourseSelectionForRating(userId, chatId, messageId, sender);
+                return;
+            case "refresh":
+                rating = ratingService.getTopStudentsByAverageScore(10);
+                title = "🏆 ТОП-10 по среднему баллу";
+                break;
+            default:
+                return;
+        }
+
+        String ratingText = formatRatingTable(rating, title);
+        EditMessageText editMessage = EditMessageText.builder()
+                .chatId(chatId.toString())
+                .messageId(messageId)
+                .text(ratingText)
+                .parseMode("Markdown")
+                .replyMarkup(getRatingKeyboard(action))
+                .build();
+
+        sender.execute(editMessage);
+    }
+
+    private void showCourseSelectionForRating(Long userId, Long chatId, Integer messageId,
+                                              AbsSender sender) throws TelegramApiException {
+        List<Course> courses = courseService.getActiveCourses();
+
+        if (courses.isEmpty()) {
+            EditMessageText editMessage = EditMessageText.builder()
+                    .chatId(chatId.toString())
+                    .messageId(messageId)
+                    .text("Нет активных курсов для показа рейтинга.")
+                    .build();
+            sender.execute(editMessage);
+            return;
+        }
+
+        InlineKeyboardMarkup keyboard = new InlineKeyboardMarkup();
+        List<List<InlineKeyboardButton>> rows = new ArrayList<>();
+
+        for (Course course : courses) {
+            List<InlineKeyboardButton> row = new ArrayList<>();
+            row.add(InlineKeyboardButton.builder()
+                    .text(course.getName())
+                    .callbackData("rating_course:" + course.getId())
+                    .build());
+            rows.add(row);
+        }
+
+        List<InlineKeyboardButton> backRow = new ArrayList<>();
+        backRow.add(InlineKeyboardButton.builder()
+                .text("🔙 Назад к рейтингу")
+                .callbackData("rating:by_score")
+                .build());
+        rows.add(backRow);
+
+        keyboard.setKeyboard(rows);
+
+        EditMessageText editMessage = EditMessageText.builder()
+                .chatId(chatId.toString())
+                .messageId(messageId)
+                .text("📚 *Выберите курс для просмотра рейтинга:*")
+                .parseMode("Markdown")
+                .replyMarkup(keyboard)
+                .build();
+
+        sender.execute(editMessage);
+    }
+
+    private String formatRatingTable(List<StudentRatingDto> rating, String title) {
+        if (rating.isEmpty()) {
+            return title + "\n\nПока нет данных для рейтинга по этому критерию.";
+        }
+
+        StringBuilder sb = new StringBuilder();
+        sb.append(title).append("\n\n");
+
+        sb.append("```\n");
+        sb.append(String.format("%-3s %-15s %-6s %-8s\n",
+                "#", "Имя", "Сред.", "Принято"));
+        sb.append("─".repeat(40)).append("\n");
+
+        int rank = 1;
+        for (StudentRatingDto student : rating) {
+            sb.append(String.format("%-3d %-15s %-6s %-8d\n",
+                    rank++,
+                    student.getShortName(),
+                    student.getFormattedAverageScore(),
+                    student.getAssignmentsAccepted()
+            ));
+        }
+        sb.append("```\n");
+
+        return sb.toString();
+    }
+
+    private InlineKeyboardMarkup getRatingKeyboard(String currentType) {
+        InlineKeyboardMarkup keyboard = new InlineKeyboardMarkup();
+        List<List<InlineKeyboardButton>> rows = new ArrayList<>();
+
+        List<InlineKeyboardButton> row1 = new ArrayList<>();
+        row1.add(InlineKeyboardButton.builder()
+                .text(currentType.equals("by_score") ? "✅ По баллам" : "🏆 По баллам")
+                .callbackData("rating:by_score")
+                .build());
+        row1.add(InlineKeyboardButton.builder()
+                .text(currentType.equals("by_submissions") ? "✅ По работам" : "📊 По работам")
+                .callbackData("rating:by_submissions")
+                .build());
+
+        List<InlineKeyboardButton> row2 = new ArrayList<>();
+        row2.add(InlineKeyboardButton.builder()
+                .text(currentType.equals("by_courses") ? "✅ По курсам" : "📚 По курсам")
+                .callbackData("rating:by_courses")
+                .build());
+        row2.add(InlineKeyboardButton.builder()
+                .text("🔄 Обновить")
+                .callbackData("rating:refresh")
+                .build());
+
+        rows.add(row1);
+        rows.add(row2);
+        keyboard.setKeyboard(rows);
+
+        return keyboard;
     }
 
     private void handleCourseSelection(Long userId, Long chatId, Integer messageId, String callbackData,
@@ -222,17 +452,17 @@ public class CallbackQueryHandler {
                 lastSubmission.getStatus() == SubmissionStatus.NEEDS_REVISION) {
 
                 messageText = String.format("""
-                            *У вас есть предыдущая сдача этого задания*
-                            
-                            *Задание:* %s
-                            *Статус:* %s
-                            *Оценка:* %s
-                            %s
-                            
-                            *Вы можете пересдать это задание!*
-                            
-                            Отправьте новую ссылку на PR с исправлениями.
-                            """,
+                                *У вас есть предыдущая сдача этого задания*
+                                
+                                *Задание:* %s
+                                *Статус:* %s
+                                *Оценка:* %s
+                                %s
+                                
+                                *Вы можете пересдать это задание!*
+                                
+                                Отправьте новую ссылку на PR с исправлениями.
+                                """,
                         assignmentDto.getTitle(),
                         lastSubmission.getStatus().getDisplayName(),
                         lastSubmission.getScore() != null ?
@@ -242,17 +472,17 @@ public class CallbackQueryHandler {
                 );
             } else {
                 messageText = String.format("""
-                            *Вы уже сдавали это задание!*
-                            
-                            *Задание:* %s
-                            *Статус:* %s
-                            *Оценка:* %s
-                            %s
-                            
-                            *К сожалению, пересдача пока недоступна.*
-                            
-                            Если хотите пересдать, обратитесь к преподавателю.
-                            """,
+                                *Вы уже сдавали это задание!*
+                                
+                                *Задание:* %s
+                                *Статус:* %s
+                                *Оценка:* %s
+                                %s
+                                
+                                *К сожалению, пересдача пока недоступна.*
+                                
+                                Если хотите пересдать, обратитесь к преподавателю.
+                                """,
                         assignmentDto.getTitle(),
                         lastSubmission.getStatus().getDisplayName(),
                         lastSubmission.getScore() != null ?
@@ -282,24 +512,24 @@ public class CallbackQueryHandler {
 
         // 🔴 Новая сдача - обычный процесс
         String messageText = String.format("""
-                    *Вы выбрали задание:*
-                    
-                    *Курс:* %s
-                    *Задание #%d:* %s
-                    %s
-                    *Макс. балл:* %d
-                    %s
-                    
-                    *Теперь отправьте ссылку на ваш Pull Request*
-                    
-                    *Формат ссылки:*
-                    ```https://github.com/username/repository/pull/123```
-                    
-                    *Требования к PR:*
-                    • PR должен быть открыт
-                    • Автор PR должен совпадать с вашим GitHub
-                    • В названии укажите номер задания
-                    """,
+                        *Вы выбрали задание:*
+                        
+                        *Курс:* %s
+                        *Задание #%d:* %s
+                        %s
+                        *Макс. балл:* %d
+                        %s
+                        
+                        *Теперь отправьте ссылку на ваш Pull Request*
+                        
+                        *Формат ссылки:*
+                        ```https://github.com/username/repository/pull/123```
+                        
+                        *Требования к PR:*
+                        • PR должен быть открыт
+                        • Автор PR должен совпадать с вашим GitHub
+                        • В названии укажите номер задания
+                        """,
                 assignmentDto.getCourse().getName(),
                 assignmentDto.getNumber(),
                 assignmentDto.getTitle(),
@@ -387,15 +617,15 @@ public class CallbackQueryHandler {
             log.info("Сдача ID={} проверена, оценка={}", submissionId, score);
 
             String updatedMessage = String.format("""
-                        *ЗАДАНИЕ ПРОВЕРЕНО*
-                        
-                        *ID сдачи:* %d
-                        *Оценка:* %d/100
-                        *Статус:* %s
-                        
-                        *Комментарий:* %s
-                        *Проверено:* %s
-                        """,
+                            *ЗАДАНИЕ ПРОВЕРЕНО*
+                            
+                            *ID сдачи:* %d
+                            *Оценка:* %d/100
+                            *Статус:* %s
+                            
+                            *Комментарий:* %s
+                            *Проверено:* %s
+                            """,
                     submissionId,
                     score,
                     getStatusDisplay(score),

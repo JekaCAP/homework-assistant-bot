@@ -260,4 +260,23 @@ public class StudentService {
         String lastName = user.getLastName() != null ? " " + user.getLastName() : "";
         return (firstName + lastName).trim();
     }
+
+    public double calculateAverageScore(Long studentId) {
+        try {
+            Double avgScore = studentRepository.calculateAverageScore(studentId);
+            return avgScore != null ? avgScore : 0.0;
+        } catch (Exception e) {
+            log.error("Error calculating average score for student {}", studentId, e);
+            return 0.0;
+        }
+    }
+
+    public int countAcceptedSubmissions(Long studentId) {
+        try {
+            return studentRepository.countAcceptedSubmissions(studentId);
+        } catch (Exception e) {
+            log.error("Error counting accepted submissions for student {}", studentId, e);
+            return 0;
+        }
+    }
 }
