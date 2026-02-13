@@ -1,0 +1,639 @@
+<!DOCTYPE html>
+<html lang="ru" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title th:text="${title}">Управление курсами</title>
+
+    <!-- Bootstrap 5 -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <style>
+        /* Стили без изменений - оставь как есть */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 40px 20px;
+        }
+
+        .container-custom {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        /* Хедер */
+        .header {
+            background: white;
+            border-radius: 20px;
+            padding: 25px 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+
+        .header h1 {
+            font-size: 28px;
+            font-weight: 700;
+            color: #2d3748;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .header h1 i {
+            color: #4299e1;
+            background: #ebf8ff;
+            padding: 10px;
+            border-radius: 12px;
+        }
+
+        .btn-create {
+            background: linear-gradient(135deg, #48bb78, #38a169);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 12px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            text-decoration: none;
+            transition: all 0.3s;
+            box-shadow: 0 4px 10px rgba(72, 187, 120, 0.3);
+        }
+
+        .btn-create:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(72, 187, 120, 0.4);
+            color: white;
+        }
+
+        /* Карточка с фильтрами */
+        .filters-card {
+            background: white;
+            border-radius: 20px;
+            padding: 25px;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+
+        .filter-label {
+            font-weight: 600;
+            color: #4a5568;
+            margin-bottom: 8px;
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .form-control, .form-select {
+            border: 2px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 12px 16px;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+
+        .form-control:focus, .form-select:focus {
+            border-color: #4299e1;
+            box-shadow: 0 0 0 3px rgba(66, 153, 225, 0.15);
+            outline: none;
+        }
+
+        .input-group-text {
+            background: white;
+            border: 2px solid #e2e8f0;
+            border-right: none;
+            border-radius: 12px 0 0 12px;
+            color: #718096;
+        }
+
+        .btn-apply {
+            background: linear-gradient(135deg, #4299e1, #3182ce);
+            color: white;
+            border: none;
+            padding: 12px;
+            border-radius: 12px;
+            font-weight: 600;
+            transition: all 0.3s;
+            height: 100%;
+        }
+
+        .btn-apply:hover {
+            background: linear-gradient(135deg, #3182ce, #2c5282);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(49, 130, 206, 0.4);
+        }
+
+        /* Таблица */
+        .table-card {
+            background: white;
+            border-radius: 20px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            overflow-x: auto;
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th {
+            text-align: left;
+            padding: 16px;
+            color: #718096;
+            font-weight: 600;
+            font-size: 13px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            border-bottom: 2px solid #e2e8f0;
+        }
+
+        td {
+            padding: 16px;
+            border-bottom: 1px solid #e2e8f0;
+            color: #2d3748;
+            vertical-align: middle;
+        }
+
+        tr:hover {
+            background: #f7fafc;
+        }
+
+        .course-icon {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 20px;
+        }
+
+        .course-info h4 {
+            font-size: 16px;
+            font-weight: 600;
+            color: #2d3748;
+            margin-bottom: 4px;
+        }
+
+        .course-info a {
+            color: #2d3748;
+            text-decoration: none;
+            transition: color 0.3s;
+        }
+
+        .course-info a:hover {
+            color: #4299e1;
+        }
+
+        .course-info p {
+            color: #718096;
+            font-size: 13px;
+            margin: 0;
+        }
+
+        .badge-active {
+            background: #c6f6d5;
+            color: #22543d;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .badge-inactive {
+            background: #fed7d7;
+            color: #742a2a;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .badge-level {
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 500;
+            display: inline-block;
+        }
+
+        .badge-beginner {
+            background: #bee3f8;
+            color: #2c5282;
+        }
+
+        .badge-intermediate {
+            background: #feebc8;
+            color: #c05621;
+        }
+
+        .badge-advanced {
+            background: #fed7d7;
+            color: #9b2c2c;
+        }
+
+        .badge-number {
+            background: #edf2f7;
+            color: #4a5568;
+            padding: 4px 8px;
+            border-radius: 6px;
+            font-weight: 600;
+            font-size: 13px;
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 6px;
+        }
+
+        .btn-icon {
+            width: 36px;
+            height: 36px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: none;
+            transition: all 0.3s;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        .btn-icon:hover {
+            transform: translateY(-2px);
+        }
+
+        .btn-edit {
+            background: #ebf8ff;
+            color: #3182ce;
+        }
+
+        .btn-edit:hover {
+            background: #bee3f8;
+            box-shadow: 0 4px 10px rgba(49, 130, 206, 0.3);
+        }
+
+        .btn-toggle {
+            background: #feebc8;
+            color: #dd6b20;
+        }
+
+        .btn-toggle:hover {
+            background: #fbd38d;
+            box-shadow: 0 4px 10px rgba(221, 107, 32, 0.3);
+        }
+
+        .btn-delete {
+            background: #fed7d7;
+            color: #e53e3e;
+        }
+
+        .btn-delete:hover {
+            background: #feb2b2;
+            box-shadow: 0 4px 10px rgba(229, 62, 62, 0.3);
+        }
+
+        .btn-view {
+            background: #e9d8fd;
+            color: #6b46c1;
+        }
+
+        .btn-view:hover {
+            background: #d6bcfa;
+            box-shadow: 0 4px 10px rgba(107, 70, 193, 0.3);
+        }
+
+        /* Пустое состояние */
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #718096;
+        }
+
+        .empty-state i {
+            font-size: 64px;
+            margin-bottom: 20px;
+            color: #cbd5e0;
+        }
+
+        .empty-state h3 {
+            font-size: 20px;
+            font-weight: 600;
+            color: #2d3748;
+            margin-bottom: 10px;
+        }
+
+        .empty-state p {
+            margin-bottom: 20px;
+        }
+
+        .btn-empty {
+            background: linear-gradient(135deg, #48bb78, #38a169);
+            color: white;
+            padding: 12px 24px;
+            border-radius: 12px;
+            text-decoration: none;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.3s;
+        }
+
+        .btn-empty:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(72, 187, 120, 0.4);
+            color: white;
+        }
+
+        /* Алерты */
+        .alert {
+            border-radius: 12px;
+            padding: 16px 20px;
+            margin-bottom: 25px;
+            border: none;
+            font-weight: 500;
+        }
+
+        .alert-success {
+            background: #c6f6d5;
+            color: #22543d;
+        }
+
+        .alert-danger {
+            background: #fed7d7;
+            color: #742a2a;
+        }
+
+        /* Код */
+        code {
+            background: #edf2f7;
+            padding: 4px 8px;
+            border-radius: 6px;
+            font-size: 13px;
+            color: #4a5568;
+        }
+
+        @media (max-width: 768px) {
+            .header {
+                flex-direction: column;
+                gap: 15px;
+                text-align: center;
+            }
+
+            .btn-group {
+                flex-wrap: wrap;
+            }
+        }
+    </style>
+</head>
+<body>
+<div class="container-custom">
+    <!-- Хедер с навигацией -->
+    <div class="header">
+        <h1>
+            <i class="fas fa-book"></i>
+            Управление курсами
+        </h1>
+        <div class="d-flex align-items-center gap-3">
+            <a href="/admin/dashboard" class="btn btn-outline-secondary rounded-pill">
+                <i class="fas fa-arrow-left me-2"></i> Назад
+            </a>
+            <a th:href="@{/admin/courses/new}" class="btn-create">
+                <i class="fas fa-plus-circle"></i>
+                Создать курс
+            </a>
+        </div>
+    </div>
+
+    <!-- Сообщения об успехе/ошибке -->
+    <div th:if="${success}" class="alert alert-success">
+        <i class="fas fa-check-circle me-2"></i> <span th:text="${success}"></span>
+    </div>
+    <div th:if="${error}" class="alert alert-danger">
+        <i class="fas fa-exclamation-circle me-2"></i> <span th:text="${error}"></span>
+    </div>
+
+    <!-- Фильтры -->
+    <div class="filters-card">
+        <div class="filter-label">
+            <i class="fas fa-filter me-2"></i>Фильтры
+        </div>
+        <form th:action="@{/admin/courses}" method="get" class="row g-3">
+            <div class="col-md-6">
+                <div class="input-group">
+                    <span class="input-group-text"><i class="fas fa-search"></i></span>
+                    <input type="text" class="form-control"
+                           name="search" placeholder="Поиск по названию или коду..."
+                           th:value="${param.search}">
+                </div>
+            </div>
+            <div class="col-md-4">
+                <select class="form-select" name="status">
+                    <option value="">Все статусы</option>
+                    <option value="active" th:selected="${param.status == 'active'}">Активные</option>
+                    <option value="inactive" th:selected="${param.status == 'inactive'}">Неактивные</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <button type="submit" class="btn-apply w-100">
+                    <i class="fas fa-filter me-1"></i> Применить
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Таблица курсов -->
+    <div class="table-card">
+        <table>
+            <thead>
+            <tr>
+                <th>Курс</th>
+                <th>Код</th>
+                <th>Сложность</th>
+                <th class="text-center">Заданий</th>
+                <th class="text-center">Студентов</th>
+                <th>Статус</th>
+                <th class="text-center">Действия</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="course : ${courses}">
+                <td>
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="course-icon">
+                            <span th:text="${course.icon}">📘</span>
+                        </div>
+                        <div class="course-info">
+                            <h4>
+                                <a th:href="@{/admin/courses/{id}(id=${course.id})}"
+                                   th:text="${course.name}">Java Basics</a>
+                            </h4>
+                            <p th:text="${course.description != null ?
+                                          #strings.abbreviate(course.description, 40) : 'Нет описания'}">
+                                Описание курса
+                            </p>
+                        </div>
+                    </div>
+                </td>
+                <td>
+                    <code th:text="${course.code}">JAVA101</code>
+                </td>
+                <td>
+                    <span th:switch="${course.difficultyLevel}"
+                          class="badge-level"
+                          th:classappend="${course.difficultyLevel == 'BEGINNER' ? 'badge-beginner' :
+                                           course.difficultyLevel == 'INTERMEDIATE' ? 'badge-intermediate' :
+                                           'badge-advanced'}">
+                        <span th:case="'BEGINNER'"><i class="fas fa-seedling me-1"></i>Начальный</span>
+                        <span th:case="'INTERMEDIATE'"><i class="fas fa-chart-line me-1"></i>Средний</span>
+                        <span th:case="'ADVANCED'"><i class="fas fa-fire me-1"></i>Продвинутый</span>
+                        <span th:case="*" th:text="${course.difficultyLevel}"></span>
+                    </span>
+                </td>
+                <td class="text-center">
+                    <span class="badge-number" th:text="${course.totalAssignments}">12</span>
+                </td>
+                <td class="text-center">
+                    <span class="badge-number" th:text="${course.activeStudents}">45</span>
+                </td>
+                <td>
+                    <!-- 👇 ИСПРАВЛЕНО: course.isActive вместо course.active -->
+                    <span th:if="${course.isActive}" class="badge-active">
+                        <i class="fas fa-circle"></i> Активен
+                    </span>
+                    <span th:unless="${course.isActive}" class="badge-inactive">
+                        <i class="fas fa-circle"></i> Неактивен
+                    </span>
+                </td>
+                <td>
+                    <div class="btn-group justify-content-center">
+                        <a th:href="@{/admin/courses/{id}/edit(id=${course.id})}"
+                           class="btn-icon btn-edit" title="Редактировать">
+                            <i class="fas fa-edit"></i>
+                        </a>
+                        <!-- 👇 ИСПРАВЛЕНО: course.isActive вместо course.active -->
+                        <button type="button" class="btn-icon btn-toggle"
+                                th:onclick="'toggleStatus(' + ${course.id} + ', ' + ${course.isActive} + ')'"
+                                title="Изменить статус">
+                            <i class="fas fa-power-off"></i>
+                        </button>
+                        <button type="button" class="btn-icon btn-delete"
+                                th:if="${course.totalAssignments == 0}"
+                                th:onclick="'deleteCourse(' + ${course.id} + ', \'' + ${course.name} + '\')'"
+                                title="Удалить курс">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                        <a th:href="@{/admin/courses/{id}(id=${course.id})}"
+                           class="btn-icon btn-view" title="Просмотр">
+                            <i class="fas fa-eye"></i>
+                        </a>
+                    </div>
+                </td>
+            </tr>
+
+            <!-- Пустое состояние -->
+            <tr th:if="${#lists.isEmpty(courses)}">
+                <td colspan="7">
+                    <div class="empty-state">
+                        <i class="fas fa-book-open"></i>
+                        <h3>Курсы не найдены</h3>
+                        <p>Создайте первый курс для начала работы</p>
+                        <a th:href="@{/admin/courses/new}" class="btn-empty">
+                            <i class="fas fa-plus-circle"></i>
+                            Создать курс
+                        </a>
+                    </div>
+                </td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- JavaScript -->
+<script>
+    function toggleStatus(courseId, currentStatus) {
+        const action = currentStatus ? 'деактивировать' : 'активировать';
+        if (confirm(`Вы уверены, что хотите ${action} курс?`)) {
+            fetch('/admin/courses/' + courseId + '/toggle', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'}
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        location.reload();
+                    } else {
+                        alert('Ошибка: ' + (data.error || 'Неизвестная ошибка'));
+                    }
+                })
+                .catch(error => {
+                    alert('Произошла ошибка при выполнении запроса');
+                    console.error('Error:', error);
+                });
+        }
+    }
+
+    function deleteCourse(courseId, courseName) {
+        if (confirm(`Вы уверены, что хотите удалить курс "${courseName}"?\nЭто действие нельзя отменить.`)) {
+            fetch('/admin/courses/' + courseId, {
+                method: 'DELETE',
+                headers: {'Content-Type': 'application/json'}
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        location.reload();
+                    } else {
+                        alert('Ошибка: ' + (data.error || 'Неизвестная ошибка'));
+                    }
+                })
+                .catch(error => {
+                    alert('Произошла ошибка при выполнении запроса');
+                    console.error('Error:', error);
+                });
+        }
+    }
+
+    // Авто-скрытие алертов через 5 секунд
+    document.addEventListener('DOMContentLoaded', function() {
+        setTimeout(function() {
+            const alerts = document.querySelectorAll('.alert');
+            alerts.forEach(alert => alert.remove());
+        }, 5000);
+    });
+</script>
+
+<!-- Bootstrap JS -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

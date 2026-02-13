@@ -18,11 +18,15 @@ public class AssignmentWithCourseDto {
     private Integer maxScore;
     private LocalDateTime deadline;
     private CourseDto course;
+    private Boolean isActive;
+    private LocalDateTime createdAt;
+    private LocalDateTime updatedAt;
 
     @Data
     public static class CourseDto {
         private Long id;
         private String name;
         private String icon;
+        private String code;
     }
 }

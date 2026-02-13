@@ -29,4 +29,10 @@ public interface CourseRepository extends JpaRepository<Course, Long> {
     @Query("SELECT COUNT(a) FROM Course c JOIN c.assignments a " +
            "WHERE c.id = :courseId AND a.isActive = true")
     long countAssignmentsByCourseId(@Param("courseId") Long courseId);
+
+    long countByIsActiveTrue();
+
+    @Query("SELECT COUNT(DISTINCT s.student.id) FROM Submission s " +
+           "WHERE s.assignment.course.id = :courseId AND s.status = 'ACCEPTED'")
+    long countActiveStudents(@Param("courseId") Long courseId);
 }

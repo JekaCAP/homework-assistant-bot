@@ -10,10 +10,12 @@ import org.telegram.telegrambots.meta.api.objects.replykeyboard.ReplyKeyboardMar
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardButton;
 import org.telegram.telegrambots.meta.bots.AbsSender;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
+import ru.assistant.bot.config.AdminWebAuthService;
 import ru.assistant.bot.model.Student;
 import ru.assistant.bot.model.Submission;
 import ru.assistant.bot.model.dto.StudentRatingDto;
 import ru.assistant.bot.model.enums.UserState;
+import ru.assistant.bot.service.AdminService;
 import ru.assistant.bot.service.CourseService;
 import ru.assistant.bot.service.RatingService;
 import ru.assistant.bot.service.StudentService;
@@ -40,7 +42,8 @@ public class MessageHandler {
     private final SubmissionService submissionService;
     private final CommandHandler commandHandler;
     private final RatingService ratingService;
-    private final CourseService courseService;
+    private final AdminWebAuthService adminWebAuthService;
+    private final AdminService adminService;
 
     private static final Pattern GITHUB_USERNAME_PATTERN = Pattern.compile("^[a-zA-Z\\d](?:[a-zA-Z\\d]|-(?=[a-zA-Z\\d])){0,38}$");
     private static final Pattern PR_URL_PATTERN = Pattern.compile("^https://github\\.com/[^/]+/[^/]+/pull/\\d+$");
@@ -359,6 +362,10 @@ public class MessageHandler {
                     handleNotificationsCommand(userId, sender);
                     break;
 
+                case "🌐 Веб-админка":
+                    handleWebAdminButton(userId, sender);
+                    break;
+
                 case "🎯 Цели":
                     handleGoalsCommand(userId, sender);
                     break;
@@ -393,6 +400,49 @@ public class MessageHandler {
             sender.execute(message);
         } catch (TelegramApiException e) {
             log.error("Error sending admin panel", e);
+        }
+    }
+
+    private void handleWebAdminButton(Long userId, AbsSender sender) {
+        try {
+            if (!adminService.existsByTelegramId(userId)) {
+                sendErrorMessage(userId, "У вас нет прав администратора", sender);
+                return;
+            }
+
+            String token = adminWebAuthService.generateTelegramLoginToken(userId);
+
+            if (token == null) {
+                sendErrorMessage(userId, "Не удалось создать токен для входа", sender);
+                return;
+            }
+
+            String loginUrl = "http://localhost:8080/login?token=" + token;
+
+            String messageText = String.format("""
+            *🌐 ВХОД В ВЕБ-АДМИНКУ*
+            
+            🔗 [НАЖМИТЕ ДЛЯ ВХОДА](%s)
+            
+            ⏳ Действительна: 5 минут
+            🔐 Токен: одноразовый
+            
+            *Скопируйте ссылку в браузер, если не открывается:*
+            `%s`
+            """, loginUrl, loginUrl);
+
+            SendMessage message = SendMessage.builder()
+                    .chatId(userId.toString())
+                    .text(messageText)
+                    .parseMode("Markdown")
+                    .disableWebPagePreview(true)
+                    .build();
+
+            sender.execute(message);
+
+        } catch (Exception e) {
+            log.error("Error handling web admin button", e);
+            sendErrorMessage(userId, "Ошибка при создании ссылки", sender);
         }
     }
 

@@ -1,0 +1,16 @@
+ALTER TABLE admins
+    ADD COLUMN IF NOT EXISTS password_hash VARCHAR(255),
+    ADD COLUMN IF NOT EXISTS email_verified BOOLEAN DEFAULT FALSE,
+    ADD COLUMN IF NOT EXISTS web_enabled BOOLEAN DEFAULT FALSE;
+
+
+CREATE SEQUENCE IF NOT EXISTS admin_auth_token_seq START 1 INCREMENT 1;
+
+CREATE TABLE IF NOT EXISTS admin_auth_tokens (
+    id BIGINT PRIMARY KEY DEFAULT nextval('admin_auth_token_seq'),
+    token VARCHAR(64) UNIQUE NOT NULL,
+    admin_id BIGINT NOT NULL REFERENCES admins(id) ON DELETE CASCADE,
+    expires_at TIMESTAMP NOT NULL,
+    used_at TIMESTAMP,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    );

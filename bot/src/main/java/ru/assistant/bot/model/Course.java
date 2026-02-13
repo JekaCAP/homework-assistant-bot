@@ -85,7 +85,6 @@ public class Course {
     @OneToMany(mappedBy = "course", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private Set<StudentProgress> studentProgresses = new HashSet<>();
 
-    // Business methods
     public boolean isActiveCourse() {
         return Boolean.TRUE.equals(isActive);
     }

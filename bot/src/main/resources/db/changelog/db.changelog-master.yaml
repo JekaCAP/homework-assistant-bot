@@ -3,3 +3,5 @@ databaseChangeLog:
       file: db/changelog/changeset/user_V001_initial.sql
   - include:
       file: db/changelog/changeset/test_data_V002.sql
+  - include:
+      file: db/changelog/changeset/add-admin-web-auth.sql

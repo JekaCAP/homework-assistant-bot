@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Ошибка входа</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>
+        body {
+            font-family: sans-serif;
+            text-align: center;
+            padding-top: 50px;
+            background: #f8f9fa;
+            margin: 0;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        h2 {
+            color: #dc3545;
+            font-size: 28px;
+            margin-bottom: 20px;
+        }
+        p {
+            color: #6c757d;
+            margin: 20px 0;
+            font-size: 16px;
+            line-height: 1.5;
+        }
+        .button {
+            background: #0088cc;
+            color: white;
+            padding: 14px 28px;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: bold;
+            display: inline-block;
+            margin: 30px 0;
+            font-size: 16px;
+            transition: background 0.3s;
+        }
+        .button:hover {
+            background: #006699;
+        }
+        .icon {
+            font-size: 48px;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="icon">❌</div>
+        <h2>Ошибка входа</h2>
+        <p>Токен недействителен, истёк или уже использован.</p>
+        <p>Запросите новый токен в Telegram боте для входа в админ-панель.</p>
+        <a href="https://t.me/java_code_assistant_bot" class="button">
+            🔗 Запросить новый токен в боте
+        </a>
+        <p style="margin-top: 40px; font-size: 14px;">
+            <a href="/login" style="color: #6c757d;">← Вернуться на страницу входа</a>
+        </p>
+    </div>
+</body>
+</html>

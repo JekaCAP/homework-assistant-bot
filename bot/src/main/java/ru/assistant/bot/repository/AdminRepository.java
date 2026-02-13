@@ -23,4 +23,6 @@ public interface AdminRepository extends JpaRepository<Admin, Long> {
     List<Admin> findByIsActiveTrue();
 
     Optional<Admin> findByTelegramIdAndIsActiveTrue(Long telegramId);
+
+    Optional<Admin> findByTelegramUsername(String telegramUsername);
 }

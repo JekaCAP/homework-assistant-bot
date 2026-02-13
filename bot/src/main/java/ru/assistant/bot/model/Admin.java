@@ -60,6 +60,17 @@ public class Admin {
     @Column
     private String email;
 
+    @Column(name = "password_hash")
+    private String passwordHash;
+
+    @Column(name = "email_verified")
+    @Builder.Default
+    private Boolean emailVerified = false;
+
+    @Column(name = "web_enabled")
+    @Builder.Default
+    private Boolean webEnabled = false;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     @Builder.Default
