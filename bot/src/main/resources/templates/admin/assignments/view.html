@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html lang="ru" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title th:text="${title}">Просмотр задания</title>
+
+    <!-- Bootstrap 5 -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 40px 20px;
+        }
+
+        .container-custom {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        /* Хедер */
+        .header {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+
+        .assignment-title {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .assignment-number-large {
+            width: 80px;
+            height: 80px;
+            background: linear-gradient(135deg, #4299e1, #3182ce);
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 36px;
+            font-weight: 700;
+            color: white;
+            box-shadow: 0 10px 20px rgba(66, 153, 225, 0.3);
+        }
+
+        .assignment-info h1 {
+            font-size: 32px;
+            font-weight: 700;
+            color: #2d3748;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
+        .badge-active-large {
+            background: #c6f6d5;
+            color: #22543d;
+            padding: 8px 16px;
+            border-radius: 30px;
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .badge-inactive-large {
+            background: #fed7d7;
+            color: #742a2a;
+            padding: 8px 16px;
+            border-radius: 30px;
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .assignment-meta {
+            display: flex;
+            gap: 25px;
+            color: #718096;
+            font-size: 16px;
+            flex-wrap: wrap;
+        }
+
+        .assignment-meta i {
+            color: #4299e1;
+            width: 20px;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 15px;
+            justify-content: flex-end;
+        }
+
+        .btn-edit-large {
+            background: linear-gradient(135deg, #4299e1, #3182ce);
+            color: white;
+            padding: 12px 24px;
+            border-radius: 12px;
+            text-decoration: none;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.3s;
+        }
+
+        .btn-edit-large:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(66, 153, 225, 0.4);
+            color: white;
+        }
+
+        .btn-back {
+            background: white;
+            color: #4a5568;
+            padding: 12px 24px;
+            border-radius: 12px;
+            text-decoration: none;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.3s;
+            border: 2px solid #e2e8f0;
+        }
+
+        .btn-back:hover {
+            background: #f7fafc;
+            color: #2d3748;
+        }
+
+        /* Статистика */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 25px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: white;
+            border-radius: 20px;
+            padding: 25px;
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+
+        .stat-icon {
+            width: 60px;
+            height: 60px;
+            border-radius: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 28px;
+        }
+
+        .stat-icon.blue { background: linear-gradient(135deg, #4299e1, #3182ce); }
+        .stat-icon.green { background: linear-gradient(135deg, #48bb78, #38a169); }
+        .stat-icon.purple { background: linear-gradient(135deg, #9f7aea, #805ad5); }
+        .stat-icon.orange { background: linear-gradient(135deg, #ed8936, #dd6b20); }
+
+        .stat-icon i { color: white; }
+
+        .stat-info h3 {
+            font-size: 14px;
+            color: #718096;
+            font-weight: 500;
+            margin-bottom: 5px;
+            text-transform: uppercase;
+        }
+
+        .stat-info .number {
+            font-size: 28px;
+            font-weight: 700;
+            color: #2d3748;
+            line-height: 1;
+        }
+
+        .stat-info .small {
+            font-size: 14px;
+            color: #718096;
+        }
+
+        /* Карточки */
+        .card-custom {
+            background: white;
+            border-radius: 20px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            border: 1px solid rgba(255,255,255,0.2);
+            height: 100%;
+            margin-bottom: 25px;
+        }
+
+        .card-header-custom {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #e2e8f0;
+        }
+
+        .card-header-custom i {
+            font-size: 24px;
+            color: #4299e1;
+        }
+
+        .card-header-custom h3 {
+            font-size: 18px;
+            font-weight: 600;
+            color: #2d3748;
+            margin: 0;
+        }
+
+        .description-text {
+            color: #4a5568;
+            line-height: 1.7;
+            white-space: pre-line;
+        }
+
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 12px 0;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .info-row:last-child {
+            border-bottom: none;
+        }
+
+        .info-label {
+            color: #718096;
+            font-weight: 500;
+        }
+
+        .info-value {
+            color: #2d3748;
+            font-weight: 600;
+        }
+
+        .requirements-list {
+            list-style: none;
+            padding: 0;
+        }
+
+        .requirements-list li {
+            padding: 8px 0;
+            border-bottom: 1px dashed #e2e8f0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .requirements-list li i {
+            color: #48bb78;
+        }
+
+        .badge-type {
+            background: #e9d8fd;
+            color: #6b46c1;
+            padding: 4px 8px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        .course-link {
+            color: #4299e1;
+            text-decoration: none;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .course-link:hover {
+            text-decoration: underline;
+        }
+
+        @media (max-width: 768px) {
+            .assignment-title {
+                flex-direction: column;
+                text-align: center;
+            }
+
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .header-actions {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+<div class="container-custom">
+    <!-- Хедер -->
+    <div class="header">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <div class="assignment-title">
+                    <div class="assignment-number-large">
+                        <span th:text="${assignment.number}">1</span>
+                    </div>
+                    <div class="assignment-info">
+                        <h1>
+                            <span th:text="${assignment.title}">Основы Java</span>
+                            <span th:if="${assignment.isActive}" class="badge-active-large">
+                                <i class="fas fa-circle me-2"></i>Активно
+                            </span>
+                            <span th:unless="${assignment.isActive}" class="badge-inactive-large">
+                                <i class="fas fa-circle me-2"></i>Неактивно
+                            </span>
+                        </h1>
+                        <div class="assignment-meta">
+                            <span>
+                                <i class="fas fa-code"></i>
+                                <a th:href="@{/admin/courses/{id}(id=${assignment.course.id})}"
+                                   class="course-link">
+                                    <span th:text="${assignment.course.name}">Java Basics</span>
+                                </a>
+                            </span>
+                            <span th:if="${assignment.type}">
+                                <i class="fas fa-tag"></i>
+                                <span class="badge-type" th:text="${assignment.type}">HOMEWORK</span>
+                            </span>
+                            <span th:if="${assignment.estimatedHours}">
+                                <i class="far fa-clock"></i>
+                                <span th:text="${assignment.estimatedHours}">4</span> часов
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="header-actions">
+                    <a th:href="@{/admin/assignments/{id}/edit(id=${assignment.id})}" class="btn-edit-large">
+                        <i class="fas fa-edit"></i>
+                        Редактировать
+                    </a>
+                    <a th:href="@{/admin/assignments}" class="btn-back">
+                        <i class="fas fa-arrow-left"></i>
+                        Назад
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Статистика -->
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-icon blue">
+                <i class="fas fa-tasks"></i>
+            </div>
+            <div class="stat-info">
+                <h3>Макс. балл</h3>
+                <div class="number" th:text="${assignment.maxScore}">100</div>
+                <div class="small" th:text="'мин. ' + ${assignment.minScore} + ' баллов'">мин. 0 баллов</div>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon green">
+                <i class="fas fa-users"></i>
+            </div>
+            <div class="stat-info">
+                <h3>Всего сдач</h3>
+                <div class="number" th:text="${stats.totalSubmissions}">234</div>
+                <div class="small" th:text="'принято: ' + ${stats.acceptedSubmissions}">принято: 180</div>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon purple">
+                <i class="fas fa-check-circle"></i>
+            </div>
+            <div class="stat-info">
+                <h3>Средний балл</h3>
+                <div class="number" th:text="${#numbers.formatDecimal(stats.averageScore, 1, 1)}">87.5</div>
+                <div class="small">из 100</div>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon orange">
+                <i class="fas fa-clock"></i>
+            </div>
+            <div class="stat-info">
+                <h3>Выполнение</h3>
+                <div class="number" th:text="${#numbers.formatDecimal(stats.completionRate, 1, 1) + '%'}">78%</div>
+                <div class="small">студентов</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <!-- Описание задания -->
+        <div class="col-md-6">
+            <div class="card-custom">
+                <div class="card-header-custom">
+                    <i class="fas fa-info-circle"></i>
+                    <h3>Описание задания</h3>
+                </div>
+                <div class="description-text" th:utext="${assignment.description != null ?
+                    #strings.replace(#strings.replace(assignment.description, '\n', '&lt;br&gt;'), '  ', ' &nbsp;') :
+                    'Нет описания'}">
+                    Подробное описание задания...
+                </div>
+            </div>
+        </div>
+
+        <!-- Требования -->
+        <div class="col-md-6">
+            <div class="card-custom">
+                <div class="card-header-custom">
+                    <i class="fas fa-list-check"></i>
+                    <h3>Требования</h3>
+                </div>
+                <ul class="requirements-list" th:if="${assignment.requirements != null and !#sets.isEmpty(assignment.requirements)}">
+                    <li th:each="req : ${assignment.requirements}">
+                        <i class="fas fa-check-circle text-success"></i>
+                        <span th:text="${req}">Требование</span>
+                    </li>
+                </ul>
+                <div th:unless="${assignment.requirements != null and !#sets.isEmpty(assignment.requirements)}"
+                     class="text-muted text-center py-4">
+                    <i class="fas fa-clipboard-list fa-2x mb-2"></i>
+                    <p>Нет требований</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Детали -->
+        <div class="col-md-6">
+            <div class="card-custom">
+                <div class="card-header-custom">
+                    <i class="fas fa-cog"></i>
+                    <h3>Детали выполнения</h3>
+                </div>
+
+                <div class="info-row">
+                    <span class="info-label">GitHub Template</span>
+                    <span class="info-value">
+                        <span th:if="${assignment.githubTemplateUrl}">
+                            <a th:href="${assignment.githubTemplateUrl}" target="_blank" class="text-decoration-none">
+                                <i class="fab fa-github me-1"></i> Открыть
+                            </a>
+                        </span>
+                        <span th:unless="${assignment.githubTemplateUrl}" class="text-muted">—</span>
+                    </span>
+                </div>
+
+                <div class="info-row">
+                    <span class="info-label">Команда для тестов</span>
+                    <span class="info-value">
+                        <code th:text="${assignment.testCommand ?: '—'}">mvn test</code>
+                    </span>
+                </div>
+
+                <div class="info-row">
+                    <span class="info-label">Дедлайн</span>
+                    <span class="info-value">
+                        <span th:if="${assignment.deadline != null}"
+                              th:text="${#temporals.format(assignment.deadline, 'dd.MM.yyyy HH:mm')}">
+                            01.03.2026 23:59
+                        </span>
+                        <span th:unless="${assignment.deadline != null}" class="text-muted">Без дедлайна</span>
+                    </span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Даты -->
+        <div class="col-md-6">
+            <div class="card-custom">
+                <div class="card-header-custom">
+                    <i class="fas fa-history"></i>
+                    <h3>Информация</h3>
+                </div>
+
+                <div class="info-row">
+                    <span class="info-label">Дата создания</span>
+                    <span class="info-value" th:text="${assignment.createdAt != null ?
+                          #temporals.format(assignment.createdAt, 'dd.MM.yyyy HH:mm') : '-'}">
+                        13.02.2026 14:30
+                    </span>
+                </div>
+
+                <div class="info-row">
+                    <span class="info-label">Последнее обновление</span>
+                    <span class="info-value" th:text="${assignment.updatedAt != null ?
+                          #temporals.format(assignment.updatedAt, 'dd.MM.yyyy HH:mm') : '-'}">
+                        13.02.2026 14:30
+                    </span>
+                </div>
+
+                <div class="info-row">
+                    <span class="info-label">Номер задания</span>
+                    <span class="info-value" th:text="${assignment.number}">1</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Bootstrap JS -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

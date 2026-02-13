@@ -22,6 +22,9 @@ public class AssignmentUpdateRequest {
     @Size(max = 5000)
     private String description;
 
+    @Min(1)
+    private Integer number;
+
     private Set<String> requirements;
 
     @Min(0)

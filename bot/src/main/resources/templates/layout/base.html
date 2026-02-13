@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="ru" xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title th:text="${title}">Homework Assistant Admin</title>
+
+    <!-- Bootstrap 5 -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <style>
+        body {
+            font-size: .875rem;
+            background-color: #f8f9fa;
+        }
+
+        .sidebar {
+            position: fixed;
+            top: 0;
+            bottom: 0;
+            left: 0;
+            z-index: 100;
+            padding: 48px 0 0;
+            box-shadow: inset -1px 0 0 rgba(0, 0, 0, .1);
+            background-color: #fff;
+            width: 250px;
+        }
+
+        .sidebar .nav-link {
+            font-weight: 500;
+            color: #333;
+            padding: 0.75rem 1rem;
+            margin: 0.2rem 0;
+            border-radius: 0.5rem;
+        }
+
+        .sidebar .nav-link:hover {
+            background-color: #e9ecef;
+        }
+
+        .sidebar .nav-link.active {
+            background-color: #0d6efd;
+            color: white;
+        }
+
+        .sidebar .nav-link i {
+            margin-right: 10px;
+            width: 20px;
+            text-align: center;
+        }
+
+        main {
+            padding-top: 48px;
+            margin-left: 250px;
+        }
+
+        .navbar {
+            background-color: #fff;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, .1);
+            position: fixed;
+            width: 100%;
+            z-index: 99;
+            margin-left: 250px;
+            padding: 0.5rem 1rem;
+        }
+
+        .content {
+            padding: 20px;
+        }
+
+        .stat-card {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.05);
+            transition: transform 0.2s;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .stat-icon {
+            font-size: 2rem;
+            color: #0d6efd;
+        }
+    </style>
+</head>
+<body>
+
+<!-- Sidebar -->
+<nav class="sidebar">
+    <div class="position-sticky pt-3">
+        <div class="px-3 mb-4">
+            <h5 class="fw-bold">📚 Homework Assistant</h5>
+            <span class="text-muted small">Admin Panel</span>
+        </div>
+
+        <ul class="nav flex-column">
+            <li class="nav-item">
+                <a class="nav-link"
+                   th:classappend="${currentUri != null and currentUri.startsWith('/admin/dashboard')} ? 'active' : ''"
+                   th:href="@{/admin/dashboard}">
+                    <i class="fas fa-chart-line"></i> Дашборд
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link"
+                   th:classappend="${currentUri != null and currentUri.startsWith('/admin/courses')} ? 'active' : ''"
+                   th:href="@{/admin/courses}">
+                    <i class="fas fa-book"></i> Курсы
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link"
+                   th:classappend="${currentUri != null and currentUri.startsWith('/admin/assignments')} ? 'active' : ''"
+                   th:href="@{/admin/assignments}">
+                    <i class="fas fa-tasks"></i> Задания
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link"
+                   th:classappend="${currentUri != null and currentUri.startsWith('/admin/submissions')} ? 'active' : ''"
+                   th:href="@{/admin/submissions/pending}">
+                    <i class="fas fa-check-circle"></i> На проверке
+                    <!-- УБРАЛИ `${pendingCount}`, потому что его нет на других страницах -->
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link"
+                   th:classappend="${currentUri != null and currentUri.startsWith('/admin/students')} ? 'active' : ''"
+                   th:href="@{/admin/students}">
+                    <i class="fas fa-users"></i> Студенты
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link"
+                   th:classappend="${currentUri != null and currentUri.startsWith('/admin/settings')} ? 'active' : ''"
+                   th:href="@{/admin/settings}">
+                    <i class="fas fa-cog"></i> Настройки
+                </a>
+            </li>
+            <li class="nav-item mt-4">
+                <a class="nav-link text-danger" th:href="@{/logout}">
+                    <i class="fas fa-sign-out-alt"></i> Выйти
+                </a>
+            </li>
+        </ul>
+    </div>
+</nav>
+
+<!-- Top navbar -->
+<nav class="navbar navbar-expand">
+    <div class="container-fluid">
+        <div class="d-flex align-items-center">
+            <span class="navbar-text me-3">
+                <i class="fas fa-user-circle"></i>
+                <span sec:authentication="principal.fullName">Админ</span>
+            </span>
+            <span class="badge bg-secondary" sec:authentication="principal.telegramUsername">@admin</span>
+        </div>
+
+        <div sec:authorize="isAuthenticated()" class="text-muted small">
+            <i class="fas fa-clock me-1"></i>
+            Последний вход:
+            <span th:if="${session.lastLoginDate != null}"
+                  th:text="${#temporals.format(session.lastLoginDate, 'dd.MM.yyyy HH:mm')}">
+                13.02.2026 01:30
+            </span>
+            <span th:unless="${session.lastLoginDate != null}">только что</span>
+        </div>
+    </div>
+</nav>
+
+<!-- Main content -->
+<main>
+    <div class="content" th:replace="${content}"></div>
+</main>
+
+<!-- Bootstrap JS -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+<th:block th:if="${scripts != null and scripts != ''}">
+    <th:block th:replace="~{${scripts}}"></th:block>
+</th:block>
+
+</body>
+</html>

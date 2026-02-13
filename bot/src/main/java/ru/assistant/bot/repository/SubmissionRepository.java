@@ -1,5 +1,7 @@
 package ru.assistant.bot.repository;
 
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -9,6 +11,7 @@ import ru.assistant.bot.model.Student;
 import ru.assistant.bot.model.Submission;
 import ru.assistant.bot.model.enums.SubmissionStatus;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -21,6 +24,25 @@ import java.util.stream.Collectors;
  */
 @Repository
 public interface SubmissionRepository extends JpaRepository<Submission, Long> {
+
+    /**
+     * Подсчет по статусу и диапазону дат
+     */
+    long countByStatusAndReviewedAtBetween(SubmissionStatus status, LocalDateTime start, LocalDateTime end);
+
+    /**
+     * Последние N сдач
+     */
+    @Query("SELECT s FROM Submission s " +
+           "JOIN FETCH s.student " +
+           "JOIN FETCH s.assignment a " +
+           "JOIN FETCH a.course " +
+           "ORDER BY s.submittedAt DESC")
+    List<Submission> findTopNOrderBySubmittedAtDesc(Pageable pageable);
+
+    default List<Submission> findTopNOrderBySubmittedAtDesc(int limit) {
+        return findTopNOrderBySubmittedAtDesc(PageRequest.of(0, limit));
+    }
 
     @Query("SELECT s FROM Submission s " +
            "WHERE s.student.id = :studentId AND s.assignment.id = :assignmentId " +
@@ -68,4 +90,15 @@ public interface SubmissionRepository extends JpaRepository<Submission, Long> {
 
     @Query("SELECT COUNT(s) FROM Submission s WHERE s.status = 'NEEDS_REVISION'")
     Long countNeedsRevisionSubmissions();
+
+    long countByAssignmentId(Long assignmentId);
+
+    @Query("SELECT COUNT(s) FROM Submission s WHERE s.assignment.id = :assignmentId AND s.status = 'ACCEPTED'")
+    long countAcceptedByAssignmentId(@Param("assignmentId") Long assignmentId);
+
+    @Query("SELECT COUNT(s) FROM Submission s WHERE s.assignment.id = :assignmentId AND s.status = 'PENDING'")
+    long countPendingByAssignmentId(@Param("assignmentId") Long assignmentId);
+
+    @Query("SELECT AVG(s.score) FROM Submission s WHERE s.assignment.id = :assignmentId AND s.score IS NOT NULL")
+    Double getAverageScoreByAssignmentId(@Param("assignmentId") Long assignmentId);
 }
